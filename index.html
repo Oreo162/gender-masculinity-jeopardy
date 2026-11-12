@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gender and Masculinity Jeopardy</title>
+<style>
+:root{
+  --bg:#070c3a; --panel:#0d1670; --cell:#1330c9; --cell-hi:#2748f0; --gold:#ffd24a;
+  --ink:#ffffff; --muted:#aab4ff; --good:#2fd47a; --bad:#ff5a5a; --line:#2a3aa8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);color-scheme:dark;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body{min-height:100vh;min-height:100dvh}
+button,input,select{font:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:12px 16px 28px}
+header.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:4px 0 12px}
+h1{margin:0;font-family:Impact,"Arial Narrow Bold","Haettenschweiler",sans-serif;font-weight:400;
+  letter-spacing:.04em;color:var(--gold);font-size:clamp(1.3rem,3.2vw,2rem);text-transform:uppercase}
+.sub{color:var(--muted);font-size:.9rem;margin-top:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--cell);color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:10px 16px;
+  font-weight:700;min-height:44px}
+.btn:hover{background:var(--cell-hi)}
+.btn.gold{background:var(--gold);color:#16164a;border-color:var(--gold)}
+.btn.gold:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn.small{padding:6px 10px;min-height:36px;font-size:.85rem}
+
+/* setup */
+.setup{max-width:560px;margin:6vh auto 0;background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:24px}
+.setup h2{margin:0 0 6px;font-family:Impact,"Arial Narrow Bold",sans-serif;font-weight:400;color:var(--gold);
+  font-size:1.7rem;letter-spacing:.04em;text-transform:uppercase}
+.setup p{color:var(--muted);margin:0 0 16px;line-height:1.45}
+.counts{display:flex;gap:8px;margin:6px 0 14px}
+.chip{width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:transparent;color:var(--ink);font-weight:800}
+.chip.on{background:var(--gold);color:#16164a;border-color:var(--gold)}
+.names{display:grid;gap:8px;margin-bottom:18px}
+.names input{width:100%;padding:12px;border-radius:10px;border:2px solid var(--line);background:#0a1050;color:var(--ink);min-height:44px}
+label.lbl{font-weight:700;display:block;margin-top:4px}
+
+/* scoreboard */
+.scores{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.team{flex:1 1 150px;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:8px 10px;text-align:center}
+.team .n{font-weight:700;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.team .s{font-family:Impact,"Arial Narrow Bold",sans-serif;font-size:clamp(1.5rem,4vw,2.2rem);color:var(--gold);line-height:1.1}
+.team .s.neg{color:var(--bad)}
+.team .adj{display:flex;gap:6px;justify-content:center;margin-top:4px}
+
+/* turns and answer buttons */
+.team.turn{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.turnname{color:var(--gold)}
+.clue.long{font-size:clamp(1.15rem,3vw,2.1rem);max-width:38ch}
+.big-answer{font-size:clamp(1.8rem,6vw,3.6rem);margin:14px 0 8px}
+.bigbtns{gap:28px;margin-top:18px}
+.big{width:104px;height:104px;border-radius:50%;border:0;font-size:3.6rem;font-weight:800;line-height:1;cursor:pointer}
+.big.ok{background:var(--good);color:#04230f}
+.big.no{background:var(--bad);color:#2b0505}
+.big:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+/* board */
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.col{display:grid;grid-template-rows:auto repeat(5,1fr);gap:6px}
+.cat{background:var(--panel);border:2px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:8px 4px;min-height:4.4em;font-weight:800;text-transform:uppercase;letter-spacing:.02em;
+  font-size:clamp(.7rem,1.35vw,1.05rem);overflow-wrap:anywhere;hyphens:auto}
+.tile{background:var(--cell);border:2px solid var(--line);border-radius:6px;color:var(--gold);
+  font-family:Impact,"Arial Narrow Bold",sans-serif;font-size:clamp(1.2rem,3.2vw,2.6rem);letter-spacing:.03em;
+  min-height:clamp(58px,11vh,112px)}
+button.tile:hover{background:var(--cell-hi)}
+.tile.used{background:#050827;border-color:#0c1250;cursor:default}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(3,6,40,.96);z-index:10;overflow:auto;display:flex;padding:16px}
+.modal{margin:auto;width:100%;max-width:980px;text-align:center;padding:8px 0}
+.meta{color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;font-size:clamp(.8rem,2vw,1rem)}
+.clue{font-size:clamp(1.4rem,4.2vw,3rem);line-height:1.25;font-weight:700;margin:6px auto 18px;max-width:30ch}
+.answer{font-size:clamp(1.2rem,3.4vw,2.2rem);color:var(--gold);font-weight:800;margin:6px 0 4px}
+.src{color:var(--muted);font-size:clamp(.85rem,1.8vw,1rem);margin-bottom:16px}
+h2.dd{font-family:Impact,"Arial Narrow Bold",sans-serif;font-weight:400;color:var(--gold);letter-spacing:.06em;
+  font-size:clamp(2rem,7vw,4rem);margin:0 0 12px}
+.form{display:grid;gap:10px;max-width:360px;margin:0 auto 14px;text-align:left}
+.form select,.form input{width:100%;padding:12px;border-radius:10px;border:2px solid var(--line);background:#0a1050;color:var(--ink);min-height:48px;font-size:1.1rem}
+.hint{color:var(--muted);font-size:.9rem}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.rows{display:grid;gap:8px;max-width:520px;margin:10px auto 16px}
+.row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:6px 8px;text-align:left}
+.row .tname{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .amt{color:var(--muted);font-weight:600;font-size:.85rem;margin-left:6px}
+.mk{min-width:76px;border-radius:8px;border:2px solid var(--line);background:transparent;color:var(--ink);font-weight:800;min-height:44px}
+.mk.r.on{background:var(--good);border-color:var(--good);color:#04230f}
+.mk.w.on{background:var(--bad);border-color:var(--bad);color:#2b0505}
+.timerbox{display:flex;gap:12px;align-items:center;justify-content:center;margin:0 0 14px}
+.timer{font-family:Impact,"Arial Narrow Bold",sans-serif;font-size:2rem;color:var(--gold);min-width:3.5em}
+.timer.up{color:var(--bad)}
+.stand{max-width:480px;margin:10px auto 16px;display:grid;gap:8px}
+.stand .r{display:flex;justify-content:space-between;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:10px 14px;font-weight:700}
+.stand .r.win{border-color:var(--gold);color:var(--gold)}
+.foot{color:var(--muted);font-size:.85rem;text-align:center;margin-top:16px}
+
+/* phones: one category per row */
+@media (max-width:640px){
+  .wrap{padding:10px 10px 24px}
+  .board{grid-template-columns:1fr;gap:12px}
+  .col{grid-template-rows:auto;grid-template-columns:repeat(5,minmax(0,1fr))}
+  .cat{grid-column:1/-1;min-height:0;padding:8px;font-size:.9rem}
+  .tile{min-height:64px;font-size:1.25rem;padding:0}
+  .row{grid-template-columns:1fr auto auto}
+  .mk{min-width:64px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .overlay{animation:fade .15s ease-out}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+(() => {
+'use strict';
+
+/* ---------- Game content (drawn from the team presentation) ---------- */
+const CATS = [
+  { name: 'Sons & Daughters', clues: [
+    { v: 100, q: 'Latino sons are often associated with providing the family with money, which is called ___ support.',
+      a: 'What is financial?', s: 'The Good Son slide' },
+    { v: 200, q: 'On the Latino Families slide, girls are expected to take care of this group of family members: the brothers and sisters born after them.',
+      a: 'Who are younger siblings?', s: 'Gender Roles In Latino Families slide' },
+    { v: 300, q: 'Compared with girls, boys’ curfews and social limitations are described as “not as ___.”',
+      a: 'What is strict?', alt: 'restrictive, limiting', s: 'Gender Roles In Latino Families slide' },
+    { v: 400, q: 'Girls are expected to be abstinent and innocent, and to be raised to be like the Catholic woman on the Religious Figures slide. Which word in her title matches “abstinent”?',
+      a: 'What is Virgin?', s: 'Gender Roles In Latino Families slides; Religious Figures and Gender Roles slide' },
+    { v: 500, q: 'Girls learn cooking and caring for family members, while boys are encouraged to go out and are expected to earn income. These lessons suggest girls will work in which place, and boys outside of it?',
+      a: 'What is the home?', alt: 'household, family, the kitchen', s: 'Gender Roles In Latino Families slides; The Good Son slide' }
+  ]},
+  { name: 'Gods & Goddesses', clues: [
+    { v: 100, q: 'In the religion of the Quechua people, this sun deity is the main deity and the partner of the moon.',
+      a: 'Who is Inti?', s: 'Religious Figures and Gender Roles slide' },
+    { v: 200, q: 'Mama Quilla, the moon, is the deity of marriage and of this monthly cycle in women’s bodies: ___.',
+      a: 'What is menstruation?', alt: 'periods', s: 'Religious Figures and Gender Roles slide' },
+    { v: 300, q: 'This Andean deity, nicknamed “Mother Nature,” nourishes and protects her children.',
+      a: 'Who is Pachamama?', s: 'Religious Figures and Gender Roles slide' },
+    { v: 400, q: 'Of the five following groups, how many are male? The sun deity, the moon deity, the deity who nourishes and protects children, Mary, and Catholic priests.',
+      a: 'What is two?', alt: 'the sun deity and the priests', s: 'Religious Figures and Gender Roles slide' },
+    { v: 500, q: 'On the slide, the women are linked to marriage and caring for children, while men are described as strong, independent, and in a position of ___ in the family.',
+      a: 'What is authority?', alt: 'power, leadership, being in charge', s: 'Religious Figures and Gender Roles slide' }
+  ]},
+  { name: 'Spirit & Mind', clues: [
+    { v: 100, q: 'The evil eye is believed to harm a child because someone feels this toward them: ___. It is tied to protecting children.',
+      a: 'What is envy?', alt: 'jealousy', s: 'Spiritual Beliefs, Gender, and Mental Health slide' },
+    { v: 200, q: 'This Spanish word means the belief that you should control yourself and handle your emotional struggles on your own.',
+      a: 'What is controlarse?', s: 'Spiritual Beliefs, Gender, and Mental Health slide' },
+    { v: 300, q: 'This Spanish term, meaning “attack of nerves,” mostly affects women, and stress from their duties gets explained as “evil spirits.”',
+      a: 'What is ataque de nervios?', s: 'Spiritual Beliefs, Gender, and Mental Health slide' },
+    { v: 400, q: 'Gallagher and Rehm interviewed Mexican-descent women who believed it was their job to spot and treat illnesses like the evil eye in their children. What family role do the slides argue carries the burden of protecting children from it?',
+      a: 'What is being a mother?', alt: 'mothers, women', s: 'Spiritual Beliefs, Gender, and Mental Health slide (Gallagher & Rehm, 2012)' },
+    { v: 500, q: 'Men are told to control themselves and handle things alone, and women’s attacks of nerves are blamed on evil spirits. In both cases, neither is being sent toward ___, which the slide says religion works best paired with.',
+      a: 'What are mental health services?', alt: 'professional help, treatment, therapy', s: 'Spiritual Beliefs, Gender, and Mental Health slide' }
+  ]},
+  { name: 'Machismo & Marianismo', clues: [
+    { v: 100, q: 'This Spanish word for traditional masculinity emphasizes both positive and negative traits.',
+      a: 'What is machismo?', s: 'Common Gender Expectations slide' },
+    { v: 200, q: 'Latina women are expected to follow the example of this Catholic figure: chaste, virtuous, and submissive.',
+      a: 'Who is the Virgin Mary?', s: 'Religious Figures and Gender Roles slide; Common Gender Expectations slide' },
+    { v: 300, q: 'Women are expected to be self-sacrificing, nurturing, modest, and responsible for domestic work, and to keep their sexual ___, a word meaning staying chaste.',
+      a: 'What is purity?', alt: 'chastity', s: 'Common Gender Expectations slide' },
+    { v: 400, q: 'Men are supposed to be strong and emotionally controlled. So the Issues slide says men have difficulty asking for ___.',
+      a: 'What is help?', alt: 'support, assistance', s: 'Common Gender Expectations slide; Issues with Gender Expectations slide' },
+    { v: 500, q: 'Men are expected to be strong and tough, to be a protector, and to take on one money-related role. The Issues slide says feeling like a failure makes men “less of a man.” So a man who cannot earn enough would feel he has failed at which role?',
+      a: 'What is being the provider?', alt: 'breadwinner', s: 'Common Gender Expectations slide; Issues with Gender Expectations slide' }
+  ]},
+  { name: 'Frida & Pew Facts', clues: [
+    { v: 100, q: 'This Mexican painter (1907–1954) challenged traditional ideas about femininity, masculinity, beauty, and identity.',
+      a: 'Who is Frida Kahlo?', s: 'Frida Kahlo & Gender Expression slide' },
+    { v: 200, q: 'This Mexican painter’s work challenged traditional gender ___ for women and men.',
+      a: 'What are roles?', alt: 'norms', s: 'Frida Kahlo & Gender Expression slide' },
+    { v: 300, q: 'On the first Pew chart, Latinas say Hispanic men face more pressure than women to avoid talking about their ___.',
+      a: 'What are feelings?', alt: 'emotions', s: 'First Pew chart slide (Pew Research Center, National Survey of Latinos, Nov. 2023)' },
+    { v: 400, q: 'On the first Pew chart, 68% of Latinas say Hispanic women face pressure to do the cooking and cleaning, but only 19% say men do. The gap between them is this many percentage points.',
+      a: 'What is 49?', alt: '49%', s: 'First Pew chart slide (68 − 19)' },
+    { v: 500, q: 'On the second Pew chart, women reported four of the five experiences more often than men. The one men reported slightly more often involves a family member, partner, or friend and happens before going out in public.',
+      a: 'What is being asked to change clothes?', alt: '17% of men vs. 16% of women', s: 'Second Pew chart slide (Pew Research Center, National Survey of Latinos, Nov. 2023)' }
+  ]},
+  { name: 'Sports & Identity', clues: [
+    { v: 100, q: 'Treating Latina girls as all the same in sports research is called this.',
+      a: 'What is the Problem of Invisibility?', alt: 'treating them as a homogeneous group', s: 'Gender Roles in Sports slide' },
+    { v: 200, q: 'The study by Monroy Castro and Mireles-Rios included ___ Latina adolescent players, ages 12–14.',
+      a: 'What is three?', alt: '3', s: 'Gender Roles in Sports slide' },
+    { v: 300, q: 'Chicana feminist theory uses this dairy-related word for identities that coexist instead of being generalized.',
+      a: 'What is “curdling”?', s: '“Third Spaces” & Cultural Identity slide' },
+    { v: 400, q: 'On the Common Gender Expectations slide, one column describes “Traditional Femininity.” The sports slides say Latina athletes reject “culturally feminine” standards. So which expectation are they pushing back on?',
+      a: 'What is marianismo?', alt: 'traditional femininity', s: 'Common Gender Expectations slide; Challenging Gendered Expectations & Body Image slide' },
+    { v: 500, q: 'Latina athletes reject traditional feminine standards by choosing the gym, and the Mexican painter on our earlier slide encouraged women to express their identities beyond what society ___ of them.',
+      a: 'What is expects?', alt: 'wants, demands', s: 'Challenging Gendered Expectations & Body Image slide; Frida Kahlo & Gender Expression slide' }
+  ]}
+];
+const FINAL = {
+  cat: 'Where It Comes From',
+  q: 'Gender expectations are learned through this process, not something people are born knowing. It is influenced by family, community, religion, media, school, peers, and acculturation.',
+  a: 'What is socialization?', alt: 'gender socialization', s: 'Where Do Latine Gender Expectations Come From? slide'
+};
+
+/* ---------- Helpers ---------- */
+const KEY = 'gm-jeopardy-v3';
+const rand = n => Math.floor(Math.random() * n);
+const fmt = n => (n < 0 ? '-$' : '$') + Math.abs(n);
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v === false || v == null) continue;
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat()) if (kid != null) e.append(kid.nodeType ? kid : document.createTextNode(kid));
+  return e;
+}
+const app = document.getElementById('app');
+let state = null, modal = null;
+
+function load() {
+  try {
+    const o = JSON.parse(localStorage.getItem(KEY));
+    if (o && Array.isArray(o.teams) && o.teams.length && o.dd && o.used && typeof o.turn === 'number') return o;
+  } catch (e) {}
+  return null;
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function clearSave() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+/* ---------- Setup ---------- */
+function showSetup() {
+  closeModal();
+  app.replaceChildren();
+  let n = 3;
+  const names = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6'];
+  const counts = el('div', { class: 'counts', role: 'group', 'aria-label': 'Number of teams' });
+  const inputs = el('div', { class: 'names' });
+  function draw() {
+    counts.replaceChildren(...[2, 3, 4, 5, 6].map(k =>
+      el('button', { type: 'button', class: 'chip' + (k === n ? ' on' : ''), 'aria-pressed': String(k === n),
+        onclick: () => { n = k; draw(); } }, String(k))));
+    inputs.replaceChildren(...names.slice(0, n).map((v, i) => {
+      const inp = el('input', { type: 'text', value: v, maxlength: '24', 'aria-label': 'Team ' + (i + 1) + ' name' });
+      inp.addEventListener('input', () => { names[i] = inp.value; });
+      return inp;
+    }));
+  }
+  draw();
+  const start = el('button', { type: 'button', class: 'btn gold', onclick: () => {
+    state = {
+      teams: names.slice(0, n).map((nm, i) => ({ name: nm.trim() || 'Team ' + (i + 1), score: 0 })),
+      used: {}, turn: 0, last: null, dd: { c: rand(CATS.length), r: 2 + rand(3) }
+    };
+    save(); showGame();
+  } }, 'Start game');
+  app.append(el('div', { class: 'setup' },
+    el('h2', {}, 'Gender & Masculinity Jeopardy'),
+    el('p', {}, 'Six categories and 30 clues from our presentation. Teams take turns choosing a clue, and only the team that chose it answers. The host taps ✓ or ✗ and points are added for a right answer. Wrong answers lose nothing. One hidden Daily Double is worth double to the team that picks it. Final Jeopardy lets every team wager, and there a wrong answer loses the wager.'),
+    el('label', { class: 'lbl' }, 'How many teams?'), counts,
+    el('label', { class: 'lbl' }, 'Team names'), inputs,
+    start));
+}
+
+/* ---------- Game screen ---------- */
+const total = () => CATS.reduce((n, c) => n + c.clues.length, 0);
+const usedCount = () => Object.keys(state.used).length;
+
+function showGame() {
+  app.replaceChildren();
+  let confirming = false, t = null;
+  const reset = el('button', { type: 'button', class: 'btn ghost small' }, 'New game');
+  reset.addEventListener('click', () => {
+    if (!confirming) {
+      confirming = true; reset.textContent = 'Tap again to confirm';
+      t = setTimeout(() => { confirming = false; reset.textContent = 'New game'; }, 3000);
+    } else { clearTimeout(t); clearSave(); state = null; showSetup(); }
+  });
+  app.append(
+    el('header', { class: 'top' },
+      el('div', {}, el('h1', {}, 'Gender & Masculinity Jeopardy'), el('div', { class: 'sub', id: 'turnbar', 'aria-live': 'polite' })),
+      el('div', { class: 'actions', id: 'actions' })),
+    el('div', { class: 'scores', id: 'scores' }),
+    el('div', { class: 'board', id: 'board' }),
+    el('div', { class: 'foot' }, 'Clues come from the class slides and our team presentation.'));
+  renderAll(reset);
+}
+
+function renderAll(reset) {
+  if (reset) renderAll.reset = reset;
+  renderTurn(); renderScores(); renderBoard(); renderActions();
+}
+
+function renderTurn() {
+  const bar = document.getElementById('turnbar');
+  if (!bar) return;
+  bar.replaceChildren();
+  if (usedCount() >= total()) bar.append('Board cleared! Tap Final Jeopardy.');
+  else bar.append(el('b', { class: 'turnname' }, state.teams[state.turn].name), ', choose a clue');
+}
+
+function renderActions() {
+  const box = document.getElementById('actions');
+  if (!box) return;
+  box.replaceChildren();
+  if (state.last) box.append(el('button', { type: 'button', class: 'btn ghost small', onclick: undo }, 'Undo last'));
+  box.append(el('button', { type: 'button', class: 'btn gold small', onclick: openFinal }, 'Final Jeopardy'), renderAll.reset);
+}
+
+function undo() {
+  const L = state.last; if (!L) return;
+  state.teams[L.team].score -= L.delta;
+  delete state.used[L.key];
+  state.turn = L.turn; state.last = null;
+  save(); renderAll();
+}
+
+function renderScores() {
+  const box = document.getElementById('scores');
+  if (!box) return;
+  box.replaceChildren(...state.teams.map((tm, i) => el('div', { class: 'team' + (i === state.turn && usedCount() < total() ? ' turn' : '') },
+    el('div', { class: 'n' }, tm.name),
+    el('div', { class: 's' }, fmt(tm.score)),
+    el('div', { class: 'adj' },
+      el('button', { type: 'button', class: 'btn ghost small', 'aria-label': 'Subtract 100 from ' + tm.name,
+        onclick: () => { tm.score -= 100; save(); renderScores(); } }, '−100'),
+      el('button', { type: 'button', class: 'btn ghost small', 'aria-label': 'Add 100 to ' + tm.name,
+        onclick: () => { tm.score += 100; save(); renderScores(); } }, '+100')))));
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.replaceChildren(...CATS.map((cat, c) => el('div', { class: 'col' },
+    el('div', { class: 'cat' }, cat.name),
+    ...cat.clues.map((cl, r) => state.used[c + '-' + r]
+      ? el('div', { class: 'tile used', 'aria-hidden': 'true' })
+      : el('button', { type: 'button', class: 'tile', 'aria-label': cat.name + ' for $' + cl.v,
+          onclick: () => openClue(c, r) }, '$' + cl.v)))));
+}
+
+/* ---------- Modal plumbing ---------- */
+function openModal(onEsc) {
+  closeModal();
+  const box = el('div', { class: 'modal' });
+  const ov = el('div', { class: 'overlay', role: 'dialog', 'aria-modal': 'true' }, box);
+  document.body.append(ov);
+  document.body.style.overflow = 'hidden';
+  modal = { ov, box, timer: null, onEsc };
+  return box;
+}
+function closeModal() {
+  if (!modal) return;
+  clearInterval(modal.timer);
+  modal.ov.remove();
+  modal = null;
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal && modal.onEsc) modal.onEsc(); });
+
+function timerControl(secs) {
+  const out = el('div', { class: 'timer' }, '');
+  const btn = el('button', { type: 'button', class: 'btn ghost small' }, 'Start ' + secs + 's timer');
+  btn.addEventListener('click', () => {
+    clearInterval(modal.timer);
+    let left = secs; out.textContent = left; out.classList.remove('up');
+    modal.timer = setInterval(() => {
+      left--; out.textContent = left > 0 ? left : 'Time!';
+      if (left <= 0) { clearInterval(modal.timer); out.classList.add('up'); }
+    }, 1000);
+  });
+  return el('div', { class: 'timerbox' }, btn, out);
+}
+
+/* ---------- Clue modal: one team answers, then check or X ---------- */
+function openClue(c, r) {
+  const cat = CATS[c], clue = cat.clues[r], key = c + '-' + r;
+  const isDD = state.dd.c === c && state.dd.r === r;
+  const team = state.turn, worth = isDD ? clue.v * 2 : clue.v;
+  let stage = 'clue';
+  const finish = right => {
+    const delta = right ? worth : 0;
+    state.teams[team].score += delta;
+    state.used[key] = true;
+    state.last = { key, team, delta, turn: team };
+    state.turn = (team + 1) % state.teams.length;
+    save(); closeModal(); renderAll();
+  };
+  const box = openModal(null);
+  const tname = state.teams[team].name;
+
+  function render() {
+    box.replaceChildren();
+    box.append(el('div', { class: 'meta' }, tname + ' · ' + cat.name + ' · ' + (isDD ? 'Daily Double, worth double: ' : '') + fmt(worth)));
+    if (stage === 'clue') {
+      if (isDD) box.append(el('h2', { class: 'dd' }, 'Daily Double!'));
+      box.append(el('div', { class: 'clue' + (clue.q.length > 140 ? ' long' : '') }, clue.q), timerControl(20), el('div', { class: 'btns' },
+        el('button', { type: 'button', class: 'btn gold', onclick: () => { stage = 'answer'; render(); } }, 'Show answer')));
+      return;
+    }
+    box.append(el('div', { class: 'answer big-answer' }, clue.a),
+      clue.alt ? el('div', { class: 'hint' }, 'Also accept: ' + clue.alt) : null,
+      el('div', { class: 'src' }, 'Source: ' + clue.s),
+      el('div', { class: 'hint' }, 'Did ' + tname + ' get it right? ' + (isDD ? 'Daily Double is worth ' : 'It is worth ') + fmt(worth) + '.'),
+      el('div', { class: 'btns bigbtns' },
+        el('button', { type: 'button', class: 'big ok', 'aria-label': tname + ' correct', onclick: () => finish(true) }, '✓'),
+        el('button', { type: 'button', class: 'big no', 'aria-label': tname + ' incorrect', onclick: () => finish(false) }, '✗')));
+  }
+  render();
+  const first = box.querySelector('button'); if (first) first.focus();
+}
+
+/* ---------- Final Jeopardy: every team wagers; a wrong answer loses the wager ---------- */
+function openFinal() {
+  const marks = {}, wagers = state.teams.map(() => 0);
+  let stage = 'wagers';
+  const box = openModal(() => (stage === 'wagers' ? closeModal() : null));
+  function setMark(i, outcome) {
+    const tm = state.teams[i], amt = wagers[i], prev = marks[i];
+    if (prev === 'right') tm.score -= amt;
+    if (prev === 'wrong') tm.score += amt;
+    if (prev === outcome) delete marks[i];
+    else { marks[i] = outcome; tm.score += outcome === 'right' ? amt : -amt; }
+    save(); renderScores();
+  }
+  function render() {
+    box.replaceChildren();
+    box.append(el('div', { class: 'meta' }, 'Final Jeopardy · ' + FINAL.cat));
+    if (stage === 'wagers') {
+      const inputs = state.teams.map((t, i) => {
+        const max = Math.max(t.score, 500);
+        const inp = el('input', { type: 'number', inputmode: 'numeric', min: '0', max: String(max), step: '1', value: '0',
+          'aria-label': t.name + ' wager' });
+        return { t, i, max, inp };
+      });
+      box.append(el('h2', { class: 'dd' }, 'Final Jeopardy'),
+        el('div', { class: 'hint', style: 'margin-bottom:10px' }, 'Category: ' + FINAL.cat + '. Each team wagers up to its score (or $500 if it has less). A right answer adds the wager and a wrong answer loses it.'),
+        el('div', { class: 'form' }, ...inputs.flatMap(o => [
+          el('label', { class: 'lbl' }, o.t.name + ' (max ' + fmt(o.max) + ')'), o.inp])),
+        el('div', { class: 'btns' },
+          el('button', { type: 'button', class: 'btn gold', onclick: () => {
+            inputs.forEach(o => { wagers[o.i] = Math.min(Math.max(parseInt(o.inp.value, 10) || 0, 0), o.max); });
+            stage = 'clue'; render();
+          } }, 'Lock wagers'),
+          el('button', { type: 'button', class: 'btn ghost', onclick: closeModal }, 'Back to board')));
+      return;
+    }
+    if (stage === 'clue') {
+      box.append(el('div', { class: 'clue' }, FINAL.q), timerControl(30), el('div', { class: 'btns' },
+        el('button', { type: 'button', class: 'btn gold', onclick: () => { stage = 'answer'; render(); } }, 'Show answer')));
+      return;
+    }
+    if (stage === 'answer') {
+      box.append(el('div', { class: 'answer big-answer' }, FINAL.a), el('div', { class: 'src' }, 'Source: ' + FINAL.s),
+        el('div', { class: 'rows' }, ...state.teams.map((tm, i) => el('div', { class: 'row' },
+          el('div', { class: 'tname' }, tm.name, el('span', { class: 'amt' }, 'wager ' + fmt(wagers[i]))),
+          el('button', { type: 'button', class: 'mk r' + (marks[i] === 'right' ? ' on' : ''), 'aria-pressed': String(marks[i] === 'right'),
+            'aria-label': tm.name + ' correct', onclick: () => { setMark(i, 'right'); render(); } }, '✓'),
+          el('button', { type: 'button', class: 'mk w' + (marks[i] === 'wrong' ? ' on' : ''), 'aria-pressed': String(marks[i] === 'wrong'),
+            'aria-label': tm.name + ' incorrect', onclick: () => { setMark(i, 'wrong'); render(); } }, '✗')))),
+        el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn gold', onclick: () => { stage = 'results'; render(); } }, 'Show final scores')));
+      return;
+    }
+    const order = state.teams.map((t, i) => ({ t, i })).sort((a, b) => b.t.score - a.t.score);
+    const top = order[0].t.score;
+    box.append(el('h2', { class: 'dd' }, 'Final scores'),
+      el('div', { class: 'stand' }, ...order.map(o => el('div', { class: 'r' + (o.t.score === top ? ' win' : '') },
+        el('span', {}, o.t.name + (o.t.score === top ? ' (winner)' : '')), el('span', {}, fmt(o.t.score))))),
+      el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn gold', onclick: closeModal }, 'Close')));
+  }
+  render();
+  const first = box.querySelector('button, input'); if (first) first.focus();
+}
+
+/* ---------- Start ---------- */
+state = load();
+if (state) showGame(); else showSetup();
+})();
+</script>
+</body>
+</html>
